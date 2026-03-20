@@ -202,7 +202,7 @@ See [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md) for the full gallery.
 
 ```bash
 # Clone the repository
-git clone https://github.com/mikepaulus/sales-hub.git
+git clone https://github.com/mikegrowsgreens/sales-hub.git
 cd sales-hub
 
 # Install dependencies
