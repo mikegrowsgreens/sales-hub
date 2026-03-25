@@ -15,7 +15,20 @@ AI-powered sales agent I built for my role at Shipday -- handles inbound 24/7, q
 ### Welcome Screen
 ![Welcome](docs/screenshots/welcome.png)
 
-*Shipday-branded chat with 6 discovery prompts. Additional screenshots (discovery conversation, ROI computation, demo booking) available in the [live demo](https://saleshub.mikegrowsgreens.com/chat).*
+### Discovery Conversation
+![Discovery](docs/screenshots/discovery.png)
+
+### ROI Computation
+![ROI](docs/screenshots/roi.png)
+
+### Demo Booking
+![Booking](docs/screenshots/booking.png)
+
+### Mobile Views
+
+| Welcome | Discovery | ROI |
+|---------|-----------|-----|
+| ![Welcome Mobile](docs/screenshots/welcome-mobile.png) | ![Discovery Mobile](docs/screenshots/discovery-mobile.png) | ![ROI Mobile](docs/screenshots/roi-mobile.png) |
 
 ---
 
