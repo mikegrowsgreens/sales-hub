@@ -1,18 +1,8 @@
-# Sales Hub Architecture
+# Shipday AI Sales Agent -- Architecture
 
 ## System Overview
 
 ```
-                    +------------------+
-                    |   Cloudflare     |
-                    |   DNS + CDN      |
-                    +--------+---------+
-                             |
-                    +--------+---------+
-                    |   Caddy Reverse  |
-                    |   Proxy (HTTPS)  |
-                    +--------+---------+
-                             |
               +--------------+--------------+
               |                             |
     +---------+---------+        +----------+----------+
@@ -28,13 +18,12 @@
                             |
                  +----------+----------+
                  |   PostgreSQL        |
-                 |   (DigitalOcean)    |
                  |                     |
-                 |   Schemas:          |
-                 |   - crm.*           |
-                 |   - bdr.*           |
+                 |   Agent tables:     |
+                 |   - crm.contacts    |
+                 |   - crm.touchpoints |
+                 |   - crm.scheduling_*|
                  |   - brain.*         |
-                 |   - deals.*         |
                  +---------------------+
 ```
 
@@ -101,7 +90,7 @@ Client (Browser/Widget)
 |  | book_demo:                                  | |
 |  |   -> createBooking() (FOR UPDATE lock)     | |
 |  |   -> Google Calendar event + Meet link     | |
-|  |   -> CRM contact link + touchpoint         | |
+|  |   -> Contact link + touchpoint             | |
 |  |   -> Confirmation email                    | |
 |  +--------------------------------------------+ |
 +--------------------------------------------------+
@@ -114,9 +103,7 @@ Client (Browser/Widget)
 |  - Extract lead info (name, email, company)      |
 |  - Generate suggested follow-up prompts          |
 |  - Strip em-dashes (safety net)                  |
-|  - Upsert lead in CRM                           |
 |  - Log conversation (PII-redacted)               |
-|  - Track campaign origin                         |
 +--------------------------------------------------+
   |
   | Response: {
@@ -248,48 +235,29 @@ Post-Call:
 |                           |
 | Transcript archival       |
 | Pattern extraction        |
-| CRM contact update        |
+| Contact update            |
 | Touchpoint creation       |
 | Brain learning pipeline   |
 +---------------------------+
 ```
 
-## Database Schema Overview
+## Data Dependencies
+
+The agent touches these database tables:
 
 ```
-crm schema:
-  organizations          -- Multi-tenant root
-  contacts               -- Prospect/customer records
-  touchpoints            -- Activity history (all channels)
-  sequences              -- Multi-step email campaigns
-  sequence_steps         -- Individual sequence steps
-  sequence_enrollments   -- Contact enrollment tracking
-  sequence_step_executions -- Step execution log
-  scheduling_event_types -- Booking configurations
-  scheduling_bookings    -- Confirmed bookings
-  scheduling_availability -- Weekly hours + overrides
-  calendar_connections   -- Google OAuth tokens (encrypted)
-  phone_calls            -- Call records + transcripts
-  customers              -- Active customer management
-  customer_emails        -- Gmail sync (via n8n)
-  customer_campaigns     -- Upsell campaign management
-  voice_agent_calls      -- Voice agent call records
+crm schema (scheduling + contacts):
+  scheduling_event_types     -- Booking configurations
+  scheduling_bookings        -- Confirmed bookings
+  scheduling_availability    -- Weekly hours + overrides
+  calendar_connections       -- Google OAuth tokens (encrypted)
+  contacts                   -- Prospect records (upserted from chat)
+  touchpoints                -- Activity history (all channels)
 
-bdr schema:
-  leads                  -- Outbound lead database
-  campaigns              -- BDR campaign management
-  enrichment_jobs        -- Lead enrichment pipeline
-
-brain schema:
-  internal_content       -- Knowledge base entries
-  call_patterns          -- Extracted winning patterns
-  conversation_logs      -- PII-redacted conversation logs
-
-deals schema:
-  deals                  -- Post-demo deal management
-  email_drafts           -- AI-generated follow-up emails
-  activity_log           -- Deal activity history
-  deal_pipelines         -- Custom pipeline stages
+brain schema (knowledge + learning):
+  internal_content           -- Knowledge base entries
+  call_patterns              -- Extracted winning patterns
+  conversation_logs          -- PII-redacted conversation logs
 ```
 
 ## External Service Integrations
@@ -303,11 +271,11 @@ deals schema:
 | - Tool calling    |     | - Meet links      |     | - Call recording  |
 +-------------------+     +-------------------+     +-------------------+
 
-+-------------------+     +-------------------+     +-------------------+
-| Deepgram          |     | ElevenLabs        |     | n8n               |
-| - Nova-2 STT      |     | - Turbo v2.5 TTS  |     | - Email send      |
-| - Real-time WS    |     | - Voice cloning   |     | - Gmail sync      |
-| - VAD events      |     | - Speed control   |     | - Webhook triggers|
-| - Word timings    |     | - Filler cache    |     | - Lead enrichment |
-+-------------------+     +-------------------+     +-------------------+
++-------------------+     +-------------------+
+| Deepgram          |     | ElevenLabs        |
+| - Nova-2 STT      |     | - Turbo v2.5 TTS  |
+| - Real-time WS    |     | - Voice cloning   |
+| - VAD events      |     | - Speed control   |
+| - Word timings    |     | - Filler cache    |
++-------------------+     +-------------------+
 ```

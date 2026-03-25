@@ -1,29 +1,34 @@
-# Sales Hub
+# Shipday AI Sales Agent
 
-AI-powered B2B sales platform with a conversational chatbot, voice phone agent, and full CRM -- built by a sales rep, for sales reps.
+AI-powered sales agent I built for my role at Shipday -- handles inbound 24/7, qualifies prospects, computes ROI, and books demos.
 
-![TypeScript](https://img.shields.io/badge/TypeScript-87%2C800%2B%20lines-blue)
 ![Next.js](https://img.shields.io/badge/Next.js-14-black)
 ![Claude](https://img.shields.io/badge/AI-Claude%20(Anthropic)-orange)
 ![License](https://img.shields.io/badge/License-MIT-green)
-
----
-
-## What This Is
-
-Sales Hub is a production sales platform I built while working as a sales rep at Shipday. I was losing deals because I could not follow up fast enough -- prospects would ask about pricing at 11pm and I would respond at 9am. By then they had already talked to a competitor.
-
-So I built an AI sales agent that handles inbound conversations 24/7, qualifies prospects using a real sales methodology, computes their ROI with actual math, and books demos directly on my calendar. Then I built a phone agent that does the same thing on live calls.
-
-This is not an LLM wrapper. It is a complete B2B sales operating system.
 
 **Live demo:** [saleshub.mikegrowsgreens.com/chat](https://saleshub.mikegrowsgreens.com/chat)
 
 ---
 
-## Key Features
+## Screenshots
 
-### AI Sales Chatbot
+### Welcome Screen
+![Welcome](docs/screenshots/welcome.png)
+
+*Shipday-branded chat with 6 discovery prompts. Additional screenshots (discovery conversation, ROI computation, demo booking) available in the [live demo](https://saleshub.mikegrowsgreens.com/chat).*
+
+---
+
+## How It Works
+
+1. **Prospect arrives** -- lands on the chat widget or receives a phone call
+2. **Discovery** -- the agent asks one question at a time, extracting order volume, ticket size, commission rates, and growth signals into a 13-slot qualification state machine
+3. **ROI reveal** -- once 3+ core slots are filled, the agent computes annual savings with real math and presents an inline SVG chart with exact dollar figures
+4. **Demo booking** -- the agent offers to book a demo, checks real-time calendar availability via tool calling, and books directly on Google Calendar with a Meet link
+
+---
+
+## AI Sales Chatbot
 
 - **Dynamic system prompt engine** -- 400+ lines of context injection that encodes a full sales methodology. Not a static prompt; it rebuilds per-turn based on qualification state, brain knowledge, and conversation stage.
 - **13-slot qualification state machine** -- extracts business data (order volume, AOV, commission rates, locations, growth signals) from natural conversation and auto-stages through discovery, implication, ROI, and close.
@@ -32,7 +37,9 @@ This is not an LLM wrapper. It is a complete B2B sales operating system.
 - **Calendar booking via tool calling** -- AI books demos mid-conversation using Claude's tool_use protocol with race-condition-safe database locks and Google Calendar FreeBusy conflict detection.
 - **5-fence guardrail system** -- topic, pricing, competitor, promise, and PII fences with real-time conversation quality scoring and escalation detection.
 
-### AI Phone Agent
+---
+
+## AI Phone Agent
 
 - **WPM pacing mirroring** -- measures prospect speaking speed via Deepgram word timings, adjusts ElevenLabs TTS speed to match (0.85x-1.1x).
 - **Barge-in context preservation** -- when a prospect interrupts, stops TTS, captures their speech, and passes interrupted context to Claude for coherent resumption.
@@ -42,25 +49,50 @@ This is not an LLM wrapper. It is a complete B2B sales operating system.
 - **Strategic pauses** -- 1.5-second pause after presenting a big ROI number to let it land.
 - **Warm handoff** -- transfers to human reps with full context (qualification state, objections raised, mood assessment, suggested next action).
 
-### Full CRM + Outbound
+---
 
-- Contact lifecycle management (raw through won/lost/nurture)
-- Pipeline kanban board with stage-specific actions
-- Multi-step email sequences with branching on engagement (like Outreach.io)
-- BDR outbound campaign system managing 2,600+ leads
-- Lead scraper by geography and business type
-- Email tracking with pixel opens and link click analytics
-- Customer hub with health scoring and AI-generated upsell campaigns
-- Brain/knowledge system that learns from call patterns
+## Guardrail System
 
-### Calendar Booking Engine
+```
+Input
+  |
+  v
++--[ PII Fence ]--+  Hard reject: SSN, credit card, bank account,
+|  PASS  |  BLOCK  |  driver license, passport patterns
++--------+---------+
+  |
+  v
++--[ Topic Fence ]-+  Redirect: politics, religion, legal,
+|  PASS  |  BLOCK   |  investments, personal advice
++---------+---------+
+  |
+  v
++--[ Pricing Fence ]+  Route to human: discount requests,
+|  PASS  |  ESCALATE |  free trials, price negotiation
++---------+----------+
+  |
+  v
++--[ Competitor Fence ]+  Reframe: competitor mentions,
+|  PASS  |  REFRAME    |  force value-differentiation
++---------+-------------+
+  |
+  v
++--[ Promise Fence ]+  Soften: guarantees, certainties,
+|  PASS  |  SOFTEN   |  enforce "typically see" language
++---------+----------+
+  |
+  v
+  Quality Score (0-100) + Escalation Detection
+```
 
-- Calendly-like scheduling with public booking pages
-- Google Calendar FreeBusy integration for real-time conflict detection
+---
+
+## Calendar Booking
+
+- Checks real-time availability via Google Calendar FreeBusy API through Claude tool calling
 - Race-condition-safe booking with `FOR UPDATE` database locks
 - Automatic Google Meet link generation
 - Timezone-aware slot computation with buffer handling
-- Auto-links contacts in CRM and creates touchpoints
 
 ---
 
@@ -76,7 +108,6 @@ This is not an LLM wrapper. It is a complete B2B sales operating system.
 | Voice TTS | ElevenLabs Turbo v2.5 |
 | Telephony | Twilio Media Streams |
 | Calendar | Google Calendar API (OAuth2 + FreeBusy) |
-| Deployment | DigitalOcean + Caddy reverse proxy |
 
 ---
 
@@ -109,7 +140,6 @@ Browser
   |
   +-- Post-processing:
         +-- Extract qualification slots from response
-        +-- Upsert lead in CRM
         +-- Log conversation (PII-redacted)
         +-- Return: reply, suggested prompts, qualification state, ROI chart
 ```
@@ -149,40 +179,10 @@ Incoming Call (Twilio)
   +-- Post-Call Processing:
         +-- Archive transcript
         +-- Extract patterns for brain learning
-        +-- Update CRM contact
         +-- Create touchpoint
 ```
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed component diagrams.
-
----
-
-## Project Stats
-
-| Metric | Value |
-|--------|-------|
-| Lines of TypeScript | 87,800+ |
-| Source files | 434 |
-| API routes | 206 |
-| Page routes | 36 |
-| Database migrations | 22 |
-| Database schemas | 4 (crm, bdr, deals, brain) |
-| Voice agent modules | 11 files, 3,440 lines |
-| Core AI module | 2,914 lines |
-| Guardrail system | 683 lines |
-
----
-
-## Screenshots
-
-See [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md) for the full gallery.
-
-| View | Description |
-|------|-------------|
-| Chat Widget | Shipday-branded chatbot with 6 starter prompts |
-| Mid-Conversation | Qualification in progress, ROI computation |
-| Booking Flow | Calendar tool calling, slot presentation, confirmation |
-| Dashboard | CRM pipeline, activity feed, KPIs |
 
 ---
 
@@ -202,8 +202,8 @@ See [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md) for the full gallery.
 
 ```bash
 # Clone the repository
-git clone https://github.com/mikegrowsgreens/sales-hub.git
-cd sales-hub
+git clone https://github.com/mikegrowsgreens/shipday-sales-agent.git
+cd shipday-sales-agent
 
 # Install dependencies
 npm install
@@ -231,37 +231,29 @@ npm run dev
 npm run voice:dev
 ```
 
-### Project Structure
+### Key Files
 
 ```
-saleshub/
-  src/
-    app/                    # Next.js App Router pages + API routes
-      api/
-        chat/prospect/      # Chat API endpoint
-        scheduling/         # Booking API endpoints
-        contacts/           # CRM API
-        ...
-    components/
-      prospect-chat/        # Chat widget component
-      ...
-    lib/
-      ai.ts                 # Core AI engine (2,914 lines)
-      guardrails.ts         # 5-fence guardrail system
-      scheduling.ts         # Calendar booking engine
-      google-calendar.ts    # Google Calendar integration
-      email-tracking.ts     # Pixel + link tracking
-      db.ts                 # PostgreSQL connection + RLS
-      ...
-    voice-agent/            # Separate PM2 process
-      server.ts             # Express + Twilio WebSocket
-      conversation-manager.ts  # Voice AI brain
-      stt.ts                # Deepgram STT pipeline
-      tts.ts                # ElevenLabs TTS + filler cache
-      handoff.ts            # Warm transfer
-      post-call.ts          # Post-call processing
-      call-quality.ts       # Connection monitoring
-      ...
+src/
+  app/
+    chat/page.tsx              # Chat page
+    api/chat/prospect/route.ts # Chat API endpoint (880 lines)
+    api/scheduling/            # Booking API endpoints
+  components/
+    prospect-chat/             # Chat widget component
+  lib/
+    ai.ts                      # Core AI engine (2,914 lines)
+    guardrails.ts              # 5-fence guardrail system (683 lines)
+    scheduling.ts              # Calendar booking engine
+    google-calendar.ts         # Google Calendar integration
+  voice-agent/                 # Separate PM2 process
+    server.ts                  # Express + Twilio WebSocket (618 lines)
+    conversation-manager.ts    # Voice AI brain (1,054 lines)
+    stt.ts                     # Deepgram STT pipeline
+    tts.ts                     # ElevenLabs TTS + filler cache
+    handoff.ts                 # Warm transfer
+    post-call.ts               # Post-call processing
+    call-quality.ts            # Connection monitoring
 ```
 
 ---
